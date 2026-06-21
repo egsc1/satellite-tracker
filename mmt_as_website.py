@@ -125,8 +125,8 @@ else:
                 
                 # --- 5. 24-HOUR SNAPSHOT VIEWER ---
                 st.divider() 
-                st.subheader("📅 24-Hour Snapshot Viewer")
-                st.write("Isolate a single day to view the satellite's specific rotation pattern.")
+                st.subheader("Let's take a closer look")
+                st.write("Isolating 24 hours makes it easier to check if I'm right lol")
                 
                 # Find the first and last dates in the dataset
                 min_date = min(times).date()
