@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="MMT Debris Tracker", layout="wide")
-st.title("EH Debris StdMg/Time Plots")
+st.title("EH Debris StdMg/Time Plots (light curves from satellite debris using the MMT Database)")
 st.write("Please select a satellite to view ! :)")
 
 Website = "http://mmt.favor2.info/satellites"
