@@ -84,7 +84,7 @@ else:
     
     with col_graph:
         selected_sats = st.multiselect(
-            "📊 Search and select DEB Satellites to graph/compare:", 
+            "Select satellites:", 
             options=sat_names,
             placeholder="Choose one or more satellites to plot..."
         )
