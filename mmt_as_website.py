@@ -116,6 +116,9 @@ else:
                         progress_bar = st.progress(0)
                         status_text = st.empty()
                         
+                        # NEW: Track skipped files
+                        empty_sats = [] 
+                        
                         for i, sat in enumerate(bulk_sats):
                             status_text.text(f"Fetching data for {sat}... ({i+1}/{len(bulk_sats)})")
                             dl_url = satellite_data[sat]
@@ -127,13 +130,20 @@ else:
                                 # Convert to CSV and add it to the ZIP folder
                                 csv_data = convert_to_csv(dl_times, dl_mags, sat)
                                 zip_file.writestr(f"{sat}_raw_data.csv", csv_data)
+                            else:
+                                # Log the ones that had no data
+                                empty_sats.append(sat)
                                 
                             # POLITE SCRAPING: Pause for 0.4 seconds to balance server limits and Streamlit timeouts
                             time.sleep(0.4) 
                             
                             progress_bar.progress((i + 1) / len(bulk_sats))
                             
-                        status_text.success(f"Successfully stole {len(bulk_sats)} files!")
+                        # NEW: Detailed success message preserving your flavour text
+                        success_msg = f"Successfully stole {len(bulk_sats) - len(empty_sats)} files!"
+                        if empty_sats:
+                            success_msg += f" (Skipped {len(empty_sats)} empty/broken files from the server.)"
+                        status_text.success(success_msg)
                         
                     st.download_button(
                         label="Download ZIPs",
