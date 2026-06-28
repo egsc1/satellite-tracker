@@ -194,8 +194,8 @@ else:
             st.plotly_chart(fig, use_container_width=True)
             
             # --- GRAPHED DATA DOWNLOAD SECTION ---
-            with st.expander("📥 Download Graphed Datasets (CSV)"):
-                st.write("Download the complete historical track data for the satellites currently on the graph.")
+            with st.expander("Download Graphed Satellites"):
+                st.write("Download the complete track data for the satellites currently displayed.")
                 cols = st.columns(len(all_downloaded_data))
                 for idx, (sat, data) in enumerate(all_downloaded_data.items()):
                     with cols[idx % len(cols)]:
@@ -210,8 +210,8 @@ else:
             
             # --- 5. 24-HOUR SNAPSHOT VIEWER ---
             st.divider() 
-            st.subheader("📅 24-Hour Snapshot Viewer")
-            st.write("Isolate a single day to view specific rotation patterns across your selected debris.")
+            st.subheader("Let's take a closer look >:)")
+            st.write("Make it easier to see the actual data lol")
             
             selected_date = st.date_input(
                 "Select a date to view:",
@@ -257,11 +257,11 @@ else:
                 st.plotly_chart(fig_daily, use_container_width=True)
                 
                 st.download_button(
-                    label=f"📥 Download Data for {selected_date} (CSV)",
+                    label=f"Download CSV for {selected_date}",
                     data=combined_24h_csv.encode('utf-8'),
                     file_name=f"debris_snapshot_{selected_date}.csv",
                     mime="text/csv",
                     key="dl_snapshot"
                 )
             else:
-                st.info(f"No tracking data recorded for any of the selected satellites on {selected_date}.")
+                st.info(f"Uhhh I got nothin'. (No data was found for this satellite on {selected_date}.")
