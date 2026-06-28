@@ -91,7 +91,7 @@ else:
         
     with col_download:
         # --- UNCAPPED BULK DOWNLOAD SECTION ---
-        with st.expander("Mass downloader !", expanded=True):
+        with st.expander("Super speedy data downloader 9000", expanded=True):
             st.write("So you don't have to experience the slog of waiting for the graphs to load to get the CSVs")
             
             # Master toggle for all satellites
