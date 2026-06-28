@@ -91,24 +91,24 @@ else:
         
     with col_download:
         # --- UNCAPPED BULK DOWNLOAD SECTION ---
-        with st.expander("📦 Bulk Download (ZIP Archive)", expanded=True):
-            st.write("Download multiple raw CSV files at once.")
+        with st.expander("Mass downloader !", expanded=True):
+            st.write("So you don't have to experience the slog of waiting for the graphs to load to get the CSVs")
             
             # Master toggle for all satellites
-            download_all = st.checkbox("Select ALL Satellites (Warning: Takes ~60 seconds)")
+            download_all = st.checkbox("Get EVERY CSV (do this at your own risk...)")
             
             if download_all:
                 bulk_sats = sat_names
             else:
                 # Removed the max_selections cap completely
                 bulk_sats = st.multiselect(
-                    "Select specific satellites for bulk download:",
+                    "Pick the satellites you want :)",
                     options=sat_names,
                     key="bulk_dl_select"
                 )
             
             if bulk_sats:
-                if st.button("Generate ZIP File", use_container_width=True):
+                if st.button("Make a 'definitely not' ZIP bomb ^_^", use_container_width=True):
                     
                     zip_buffer = io.BytesIO()
                     
@@ -133,10 +133,10 @@ else:
                             
                             progress_bar.progress((i + 1) / len(bulk_sats))
                             
-                        status_text.success(f"Successfully packaged {len(bulk_sats)} files!")
+                        status_text.success(f"Successfully stole {len(bulk_sats)} files!")
                         
                     st.download_button(
-                        label="💾 Download ZIP Archive",
+                        label="Download ZIPs",
                         data=zip_buffer.getvalue(),
                         file_name="mmt_debris_bulk_data.zip",
                         mime="application/zip",
