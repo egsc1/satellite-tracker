@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 # --- PAGE SETUP ---
 st.set_page_config(page_title="MMT Debris Tracker", layout="wide")
 st.title("EH Debris StdMg/Time Plots")
-st.write("Light curves from satellite debris using the MMT Database. Select one or more satellites to compare! :)")
+st.write("Light curves from satellite debris using the MMT Database. Select satellites to compare, or download raw data directly! :)")
 
 Website = "http://mmt.favor2.info/satellites"
 headers = {
@@ -78,25 +78,57 @@ if not satellite_data:
 else:
     sat_names = list(satellite_data.keys())
     
-    selected_sats = st.multiselect(
-        "Search and select DEB Satellites to compare:", 
-        options=sat_names,
-        placeholder="Choose one or more satellites..."
-    )
+    # Split the interface into two clear columns: One for Graphing, One for Direct Bulk Downloading
+    col_graph, col_download = st.columns([2, 1])
+    
+    with col_graph:
+        selected_sats = st.multiselect(
+            "📊 Search and select DEB Satellites to graph/compare:", 
+            options=sat_names,
+            placeholder="Choose one or more satellites to plot..."
+        )
+        
+    with col_download:
+        # NEW: Direct Download Box for unselected satellites
+        with st.expander("📥 Quick Download Any Satellite (No Graphing)"):
+            st.write("Get raw CSV data instantly for any satellite without loading it onto the chart.")
+            search_dl = st.selectbox(
+                "Find satellite to download:",
+                options=[""] + sat_names,
+                format_func=lambda x: "Type name here..." if x == "" else x,
+                key="direct_download_search"
+            )
+            
+            if search_dl:
+                dl_url = satellite_data[search_dl]
+                with st.spinner(f"Fetching raw data for {search_dl}..."):
+                    dl_times, dl_mags, _ = fetch_light_curve(dl_url)
+                
+                if len(dl_times) > 0:
+                    direct_csv = convert_to_csv(dl_times, dl_mags, search_dl)
+                    st.download_button(
+                        label=f"💾 Download {search_dl} CSV",
+                        data=direct_csv,
+                        file_name=f"{search_dl}_raw_data.csv",
+                        mime="text/csv",
+                        use_container_width=True,
+                        key="direct_dl_btn"
+                    )
+                else:
+                    st.error("Could not retrieve data for this satellite.")
 
-    # --- 3. PROCESS MULTIPLE SATELLITES ---
+    # --- 3. PROCESS MULTIPLE SATELLITES FOR GRAPHING ---
     if selected_sats:
         fig = go.Figure()
         
         global_min_date = None
         global_max_date = None
-        
         all_downloaded_data = {}
         
         for sat in selected_sats:
             target_url = satellite_data[sat]
             
-            with st.spinner(f"Loading data for {sat}..."):
+            with st.spinner(f"Loading graph data for {sat}..."):
                 times, mags, skipped = fetch_light_curve(target_url)
                 
             if len(times) > 0:
@@ -134,10 +166,9 @@ else:
             )
             st.plotly_chart(fig, use_container_width=True)
             
-            # --- FULL DATASET DOWNLOAD SECTION ---
-            with st.expander("📥 Download Full Satellite Datasets (CSV)"):
-                st.write("Download the complete historical track data for any selected satellite.")
-                # Create a download button for each selected satellite
+            # --- GRAPHED DATA DOWNLOAD SECTION ---
+            with st.expander("📥 Download Graphed Datasets (CSV)"):
+                st.write("Download the complete historical track data for the satellites currently on the graph.")
                 cols = st.columns(len(all_downloaded_data))
                 for idx, (sat, data) in enumerate(all_downloaded_data.items()):
                     with cols[idx % len(cols)]:
@@ -164,8 +195,6 @@ else:
             
             fig_daily = go.Figure()
             data_found_for_date = False
-            
-            # Prepare a combined CSV string for the 24-hour download
             combined_24h_csv = "Satellite,Time (UTC),Standard Magnitude\n"
             
             for sat, data in all_downloaded_data.items():
@@ -176,7 +205,6 @@ else:
                     if t.date() == selected_date:
                         daily_times.append(t)
                         daily_mags.append(m)
-                        # Add to the combined CSV file
                         combined_24h_csv += f"{sat},{t},{m}\n"
                         
                 if len(daily_times) > 0:
@@ -201,7 +229,6 @@ else:
                 )
                 st.plotly_chart(fig_daily, use_container_width=True)
                 
-                # --- 24-HOUR DATA DOWNLOAD BUTTON ---
                 st.download_button(
                     label=f"📥 Download Data for {selected_date} (CSV)",
                     data=combined_24h_csv.encode('utf-8'),
