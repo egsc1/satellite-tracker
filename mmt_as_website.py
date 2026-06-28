@@ -4,6 +4,9 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from datetime import datetime
 import plotly.graph_objects as go
+import zipfile
+import io
+import time
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="MMT Debris Tracker", layout="wide")
@@ -62,7 +65,6 @@ def fetch_light_curve(target_url):
                     skipped_lines += 1
     return times, mags, skipped_lines
 
-# Helper function to turn lists into a downloadable CSV file
 def convert_to_csv(times, mags, sat_name="Satellite"):
     csv_str = f"Satellite,Time (UTC),Standard Magnitude\n"
     for t, m in zip(times, mags):
@@ -78,7 +80,6 @@ if not satellite_data:
 else:
     sat_names = list(satellite_data.keys())
     
-    # Split the interface into two clear columns: One for Graphing, One for Direct Bulk Downloading
     col_graph, col_download = st.columns([2, 1])
     
     with col_graph:
@@ -89,33 +90,59 @@ else:
         )
         
     with col_download:
-        # NEW: Direct Download Box for unselected satellites
-        with st.expander("📥 Quick Download Any Satellite (No Graphing)"):
-            st.write("Get raw CSV data instantly for any satellite without loading it onto the chart.")
-            search_dl = st.selectbox(
-                "Find satellite to download:",
-                options=[""] + sat_names,
-                format_func=lambda x: "Type name here..." if x == "" else x,
-                key="direct_download_search"
-            )
+        # --- UNCAPPED BULK DOWNLOAD SECTION ---
+        with st.expander("📦 Bulk Download (ZIP Archive)", expanded=True):
+            st.write("Download multiple raw CSV files at once.")
             
-            if search_dl:
-                dl_url = satellite_data[search_dl]
-                with st.spinner(f"Fetching raw data for {search_dl}..."):
-                    dl_times, dl_mags, _ = fetch_light_curve(dl_url)
-                
-                if len(dl_times) > 0:
-                    direct_csv = convert_to_csv(dl_times, dl_mags, search_dl)
+            # Master toggle for all satellites
+            download_all = st.checkbox("Select ALL Satellites (Warning: Takes ~60 seconds)")
+            
+            if download_all:
+                bulk_sats = sat_names
+            else:
+                # Removed the max_selections cap completely
+                bulk_sats = st.multiselect(
+                    "Select specific satellites for bulk download:",
+                    options=sat_names,
+                    key="bulk_dl_select"
+                )
+            
+            if bulk_sats:
+                if st.button("Generate ZIP File", use_container_width=True):
+                    
+                    zip_buffer = io.BytesIO()
+                    
+                    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+                        
+                        for i, sat in enumerate(bulk_sats):
+                            status_text.text(f"Fetching data for {sat}... ({i+1}/{len(bulk_sats)})")
+                            dl_url = satellite_data[sat]
+                            
+                            # Fetch the data
+                            dl_times, dl_mags, _ = fetch_light_curve(dl_url)
+                            
+                            if dl_times:
+                                # Convert to CSV and add it to the ZIP folder
+                                csv_data = convert_to_csv(dl_times, dl_mags, sat)
+                                zip_file.writestr(f"{sat}_raw_data.csv", csv_data)
+                                
+                            # POLITE SCRAPING: Pause for 0.4 seconds to balance server limits and Streamlit timeouts
+                            time.sleep(0.4) 
+                            
+                            progress_bar.progress((i + 1) / len(bulk_sats))
+                            
+                        status_text.success(f"Successfully packaged {len(bulk_sats)} files!")
+                        
                     st.download_button(
-                        label=f"💾 Download {search_dl} CSV",
-                        data=direct_csv,
-                        file_name=f"{search_dl}_raw_data.csv",
-                        mime="text/csv",
+                        label="💾 Download ZIP Archive",
+                        data=zip_buffer.getvalue(),
+                        file_name="mmt_debris_bulk_data.zip",
+                        mime="application/zip",
                         use_container_width=True,
-                        key="direct_dl_btn"
+                        type="primary"
                     )
-                else:
-                    st.error("Could not retrieve data for this satellite.")
 
     # --- 3. PROCESS MULTIPLE SATELLITES FOR GRAPHING ---
     if selected_sats:
